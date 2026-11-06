@@ -11,6 +11,9 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+.agents/
+.claude/
+emulator-data/
 
 # IntelliJ related
 *.iml
