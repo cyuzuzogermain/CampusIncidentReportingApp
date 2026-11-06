@@ -1,0 +1,42 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "campus-incident-app-aedd3",
+          "appId": "1:379717583072:android:dfb7525edb60325bdd1085",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "campus-incident-app-aedd3",
+          "configurations": {
+            "android": "1:379717583072:android:dfb7525edb60325bdd1085",
+            "web": "1:379717583072:web:f3272e7ae40defaadd1085"
+          }
+        }
+      }
+    }
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "storage": {
+      "host": "127.0.0.1",
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true,
+      "port": 9191
+    },
+    "singleProjectMode": true
+  }
+}

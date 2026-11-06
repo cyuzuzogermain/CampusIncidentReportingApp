@@ -1,0 +1,42 @@
+rules_version = '2';
+
+// Firebase Storage security rules for incident photos.
+//
+// Photos live at incident_photos/{incidentId}.jpg, or
+// incident_photos/{incidentId}_{timestamp}.jpg after the reporter replaces
+// the photo while editing. The app uploads the photo
+// before writing the incident document, then stores its download URL in
+// the document's imageUrl field.
+//
+// Deploy with:  firebase deploy --only firestore:rules,storage
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /incident_photos/{fileName} {
+      // Any signed-in user can view photos.
+      allow read: if request.auth != null;
+
+      // Signed-in users can upload a new photo if it is an image under 5 MB.
+      // This keeps out other file types and very large uploads. The limit
+      // matches AppConstants.maxPhotoBytes in the app. The uploader records
+      // themselves in the ownerUid metadata.
+      allow create: if request.auth != null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*')
+        && request.resource.metadata.ownerUid == request.auth.uid;
+
+      // Only the uploader can delete a photo, when they replace it while
+      // editing or withdraw their report. (Firestore rules decide whether
+      // that edit or withdrawal is allowed.) Nobody overwrites a photo: an
+      // edited report gets a photo with a new file name.
+      allow delete: if request.auth != null
+        && resource.metadata.ownerUid == request.auth.uid;
+      allow update: if false;
+    }
+
+    // Deny everything else in the bucket.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
