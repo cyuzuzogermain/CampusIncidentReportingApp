@@ -5,8 +5,7 @@ such as a broken light, a leaking tap or an unsafe area, with an optional photo,
 and follow each report as it moves from **Submitted** to **In Progress** to
 **Resolved**. Campus staff see every report and update its status.
 
-Built for Android (Android emulator) and also runs in the browser
-(`flutter run -d web-server`), with Firebase as the backend.
+An Android app (run on the Android emulator), with Firebase as the backend.
 
 ---
 
@@ -340,36 +339,6 @@ flutter run                            # build and install the app
 Camera tip: the emulator's virtual camera works with **Take a photo**. For
 **Choose from gallery**, take a picture with the emulator's Camera app first,
 or drag an image file onto the emulator window.
-
----
-
-## Running in the browser (no Android emulator)
-
-If the Android emulator is too heavy for your laptop, run the same app as a
-web app:
-
-```bash
-# Terminal 1: Storage Emulator (same command as setup step 4)
-firebase emulators:start --only storage --project campus-incident-app-aedd3 --import=./emulator-data --export-on-exit=./emulator-data
-
-# Terminal 2: the app
-flutter run -d web-server --web-port 8000
-```
-
-Then open <http://localhost:8000> in Chrome, Edge or Firefox.
-
-- The web app is registered in Firebase as
-  `1:379717583072:web:f3272e7ae40defaadd1085`, and its config is in
-  `lib/firebase_options.dart`. After adding a platform, regenerate it with
-  `flutterfire configure --project=campus-incident-app-aedd3 --platforms=android,web`.
-- On the web the app talks to the Storage Emulator at `127.0.0.1:9199`. On
-  Android it uses `10.0.2.2:9199`. `StorageConfig.displayUrl` rewrites saved
-  photo URLs, so a photo uploaded from one platform also shows on the other.
-- Photos are handled as bytes (`PickedImage`): uploaded with `putData` and
-  previewed with `Image.memory`. That's why the same code works without a file
-  system. On a desktop browser, **Take a photo** opens a file chooser.
-- Use a fixed `--web-port` so the address stays the same between runs.
-  `localhost` is already an authorised domain for Firebase Auth.
 
 ---
 

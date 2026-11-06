@@ -52,3 +52,6 @@ app.*.map.json
 
 # Tooling
 skills-lock.json
+
+# Web platform folder (Android-only submission)
+/web/

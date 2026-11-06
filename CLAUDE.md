@@ -1,8 +1,7 @@
 # Campus Incident Reporting App
 
-University assignment (Flutter; Android emulator target, also runs on the web
-via `flutter run -d web-server`). Students report campus
-issues; staff review them and update their status.
+University assignment: a Flutter Android app (Android emulator target).
+Students report campus issues; staff review them and update their status.
 
 ## Scope — build only what's specified, no extra features
 - **Students:** create a report with title, description, category, location and an
@@ -66,12 +65,10 @@ requires turning off the emulator flag.
   (`android/app/src/debug/AndroidManifest.xml`); release builds don't.
 - `emulator-data/` holds the exported emulator photos. It is local only
   (git-ignored, not committed).
-- **Web support:** the emulator host is `127.0.0.1` on web and `10.0.2.2` on
-  Android (`StorageConfig.emulatorHost`). Show photos through
-  `StorageConfig.displayUrl(url)` so URLs saved from either platform load.
-  Never use `dart:io` (`File`, `Image.file`, `putFile`): photos are
-  `PickedImage` bytes, uploaded with `putData` and previewed with
-  `Image.memory`.
+- Show photos through `StorageConfig.displayUrl(url)`.
+- **Photo upload approach:** photos are handled as bytes (`PickedImage`),
+  uploaded with `putData` and previewed with `Image.memory`. Don't use
+  `File`, `Image.file` or `putFile`.
 
 ## Architecture (layered; dependencies only point downward)
 ```
@@ -124,6 +121,5 @@ hard-coded values.
 - `firebase emulators:start --only storage --project campus-incident-app-aedd3 --import=./emulator-data --export-on-exit=./emulator-data`
   (keep it running while using the app)
 - `flutter emulators --launch Pixel_8` then `flutter run`
-- Web instead: `flutter run -d web-server --web-port 8000`, then open http://localhost:8000
 - `firebase deploy --only firestore:rules` (add `,storage` only once a cloud
   bucket exists on the Blaze plan)
