@@ -230,8 +230,8 @@ Things to know:
 - Photo URLs saved in Firestore point to `http://10.0.2.2:9199/...`, so they
   only load from the Android emulator on the same laptop while the Storage
   Emulator is running.
-- The `emulator-data/` folder holds the exported photos. It is kept in the
-  repo, not git-ignored, so sample photos survive restarts.
+- The `emulator-data/` folder holds the exported photos so they survive
+  restarts. It is local only: git-ignored and not committed.
 
 ---
 
@@ -394,18 +394,3 @@ flutter test
 | `test/widgets/*` | `StatusBadge`, `IncidentCard`, report form validation errors |
 
 A manual end-to-end checklist is in [TESTING.md](TESTING.md).
-
----
-
-## Screenshots
-
-| Login | Home | Report an Incident |
-| --- | --- | --- |
-| ![Login](docs/screenshots/login.png) | ![Home](docs/screenshots/home.png) | ![Report](docs/screenshots/report.png) |
-
-| My Reports | Incident Details | Staff Dashboard |
-| --- | --- | --- |
-| ![My Reports](docs/screenshots/my_reports.png) | ![Details](docs/screenshots/details.png) | ![Dashboard](docs/screenshots/staff_dashboard.png) |
-
-> Placeholders: add your emulator screenshots to `docs/screenshots/` with the
-> file names above.

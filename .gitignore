@@ -48,6 +48,7 @@ app.*.map.json
 /android/app/release
 
 # Firebase emulators
-# emulator-data/ is intentionally NOT ignored: it holds the Storage Emulator's
-# exported sample photos (and the metadata needed to re-import them).
 # Emulator debug logs are already covered by *.log above.
+
+# Tooling
+skills-lock.json
