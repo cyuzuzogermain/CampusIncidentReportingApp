@@ -7,6 +7,9 @@ abstract final class AppRoutes {
   static const String signUp = '/signup';
   static const String forgotPassword = '/forgot-password';
 
+  /// The only route a signed-in user with an unverified email can reach.
+  static const String verifyEmail = '/verify-email';
+
   // Student
   static const String home = '/home';
   static const String reports = '/reports';

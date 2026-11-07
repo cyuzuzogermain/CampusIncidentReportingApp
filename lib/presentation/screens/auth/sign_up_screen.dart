@@ -91,13 +91,13 @@ class _SignUpViewState extends State<_SignUpView> {
                 const SizedBox(height: 16),
                 AppTextField(
                   label: 'Email',
-                  hint: 'you@university.edu',
+                  hint: 'you@alustudent.com',
                   controller: _emailController,
                   prefixIcon: Icons.mail_outline_rounded,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   autofillHints: const [AutofillHints.email],
-                  validator: Validators.email,
+                  validator: Validators.aluEmail,
                 ),
                 const SizedBox(height: 16),
                 AppTextField(

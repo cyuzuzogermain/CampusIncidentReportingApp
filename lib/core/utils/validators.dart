@@ -27,6 +27,24 @@ abstract final class Validators {
     return null;
   }
 
+  static const String aluEmailMessage = 'Please use your ALU email address';
+
+  /// Whether [email] ends in one of [AppConstants.allowedEmailDomains].
+  static bool isAluEmail(String? email) {
+    final normalized = (email ?? '').trim().toLowerCase();
+    return AppConstants.allowedEmailDomains.any(
+      (domain) => normalized.endsWith('@$domain'),
+    );
+  }
+
+  /// A valid email address on an ALU domain.
+  static String? aluEmail(String? value) {
+    final invalid = email(value);
+    if (invalid != null) return invalid;
+    if (!isAluEmail(value)) return aluEmailMessage;
+    return null;
+  }
+
   static String? password(String? value) {
     if (value == null || value.isEmpty) return 'Password is required';
     if (value.length < AppConstants.passwordMinLength) {

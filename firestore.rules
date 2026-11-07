@@ -12,8 +12,15 @@ service cloud.firestore {
 
     // ---------- Helpers ----------
 
+    // Only ALU accounts whose email has been verified count as signed in.
+    // Every read and write below goes through this check. The domains must
+    // match AppConstants.allowedEmailDomains in the app.
     function isSignedIn() {
-      return request.auth != null;
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string
+        && request.auth.token.email.lower()
+             .matches('.*@(alustudent|alueducation)[.]com');
     }
 
     function isOwner(uid) {

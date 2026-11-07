@@ -9,9 +9,12 @@ by `flutter test`.
 
 | Account | How to create it |
 | --- | --- |
-| Student A | Sign up in the app |
-| Student B | Sign up in the app (used to check privacy) |
-| Staff | Sign up in the app, then in the Firebase console change `users/{uid}.role` to `"staff"` |
+| Student A | Sign up in the app with an `@alustudent.com` address you can open, then verify it |
+| Student B | Sign up in the app with another ALU address and verify it (used to check privacy) |
+| Staff | Sign up in the app with an `@alueducation.com` address, verify it, then in the Firebase console change `users/{uid}.role` to `"staff"` |
+
+Only `@alustudent.com` and `@alueducation.com` addresses can sign up or log
+in, and each account must verify its email before it can use the app.
 
 ---
 
@@ -20,6 +23,9 @@ by `flutter test`.
 - [ ] App opens on the splash screen, then shows **Login** when signed out.
 - [ ] Login with empty fields shows "Email is required" and "Password is required".
 - [ ] Invalid email (e.g. `jane@`) shows "Enter a valid email address".
+- [ ] A non-ALU email (e.g. `jane@gmail.com`) shows "Please use your ALU
+      email address" on both **Login** and **Sign Up**, and nothing is sent to
+      Firebase.
 - [ ] Password shorter than 6 characters shows the minimum-length error.
 - [ ] Wrong password shows "Incorrect email or password." in a snackbar.
 - [ ] The eye icon toggles password visibility.
@@ -27,8 +33,22 @@ by `flutter test`.
       department, password and confirm password.
 - [ ] Mismatched passwords show "Passwords do not match".
 - [ ] Signing up with an email that's already registered shows "An account already exists with this email."
-- [ ] Successful sign-up lands on the **student Home** screen.
-- [ ] In Firestore, the new `users/{uid}` doc has `role: "student"`.
+- [ ] Successful sign-up opens **Verify your email**, showing the address you
+      signed up with, and a verification email arrives (check spam).
+- [ ] Before verifying, there is no `users/{uid}` doc in Firestore yet.
+- [ ] Tapping **I've verified** before opening the link shows "Your email
+      isn’t verified yet…" and stays on the screen.
+- [ ] **Resend email** sends another email, then shows a countdown
+      ("Resend email (59s)") and is disabled until it reaches zero.
+- [ ] While unverified, closing and reopening the app returns to **Verify
+      your email**; no other screen can be reached.
+- [ ] Logging in with an unverified ALU account also opens **Verify your
+      email**.
+- [ ] **Use another account** signs out and returns to Login.
+- [ ] Open the link in the email, then tap **I've verified**: the app lands on
+      the **student Home** screen.
+- [ ] In Firestore, the new `users/{uid}` doc now exists with
+      `role: "student"` and the name and department from the form.
 - [ ] **Forgot password?** with a valid email shows the confirmation card and
       a reset email arrives (check spam).
 - [ ] Logging out from **Profile** returns to Login; the back button does not

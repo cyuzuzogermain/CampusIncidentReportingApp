@@ -44,6 +44,42 @@ void main() {
     });
   });
 
+  group('ALU email domains', () {
+    test('isAluEmail accepts only the allowed domains', () {
+      expect(Validators.isAluEmail('jane@alustudent.com'), isTrue);
+      expect(Validators.isAluEmail('sam@alueducation.com'), isTrue);
+      // Case and surrounding spaces don't matter.
+      expect(Validators.isAluEmail(' Jane@ALUStudent.COM '), isTrue);
+
+      for (final other in [
+        null,
+        '',
+        'jane@gmail.com',
+        'jane@alu.ac.rw',
+        'jane@alustudent.com.evil.com',
+        'jane@notalustudent.com',
+        'jane@mail.alustudent.com',
+        'alustudent.com',
+      ]) {
+        expect(Validators.isAluEmail(other), isFalse, reason: other);
+      }
+    });
+
+    test('aluEmail reports a missing or malformed address first', () {
+      expect(Validators.aluEmail(''), 'Email is required');
+      expect(Validators.aluEmail('jane@'), 'Enter a valid email address');
+    });
+
+    test('aluEmail asks for an ALU address on other domains', () {
+      expect(
+        Validators.aluEmail('jane@gmail.com'),
+        'Please use your ALU email address',
+      );
+      expect(Validators.aluEmail('jane@alustudent.com'), isNull);
+      expect(Validators.aluEmail('sam@alueducation.com'), isNull);
+    });
+  });
+
   group('Validators.password', () {
     test('requires at least 6 characters', () {
       expect(Validators.password(''), 'Password is required');

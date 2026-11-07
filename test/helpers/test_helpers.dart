@@ -20,7 +20,7 @@ final DateTime testDate = DateTime(2026, 11, 3, 9, 30);
 final AppUser testStudent = AppUser(
   uid: 'student-1',
   name: 'Jane Student',
-  email: 'jane@uni.edu',
+  email: 'jane@alustudent.com',
   role: UserRole.student,
   department: 'Computer Science',
   createdAt: testDate,
@@ -29,7 +29,7 @@ final AppUser testStudent = AppUser(
 final AppUser otherStudent = AppUser(
   uid: 'student-2',
   name: 'Omar Classmate',
-  email: 'omar@uni.edu',
+  email: 'omar@alustudent.com',
   role: UserRole.student,
   department: 'Engineering',
   createdAt: testDate,
@@ -38,7 +38,7 @@ final AppUser otherStudent = AppUser(
 final AppUser testStaff = AppUser(
   uid: 'staff-1',
   name: 'Sam Staff',
-  email: 'sam@uni.edu',
+  email: 'sam@alueducation.com',
   role: UserRole.staff,
   department: 'Estates',
   createdAt: testDate,

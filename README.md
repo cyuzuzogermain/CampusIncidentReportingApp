@@ -14,6 +14,14 @@ An Android app (run on the Android emulator), with Firebase as the backend.
 ### Students
 - **Accounts:** sign up (name, email, department, password), log in, reset a
   forgotten password. New accounts are always students.
+- **ALU accounts only:** sign-up and login accept only `@alustudent.com` and
+  `@alueducation.com` addresses (`AppConstants.allowedEmailDomains`); any
+  other address shows "Please use your ALU email address".
+- **Email verification:** after sign-up the app sends a verification email
+  and shows a **Verify your email** screen with the address, **Resend email**
+  (with a 60-second cooldown), **I've verified** (reloads the account and
+  continues once it is verified) and **Use another account** (signs out).
+  Until the email is verified, that screen is the only one the user can reach.
 - **Home:** a personal greeting, a "See an issue on campus?" banner, a report
   summary (total, In Progress, Resolved, Submitted) and the three most recent
   reports.
@@ -38,6 +46,10 @@ An Android app (run on the Android emulator), with Firebase as the backend.
 - Firestore and Storage security rules enforce the roles on the server, not
   just in the UI. See [`firestore.rules`](firestore.rules) and
   [`storage.rules`](storage.rules).
+- Every Firestore and Storage read or write also requires a verified ALU
+  email: `request.auth.token.email_verified == true` and an email ending in
+  `@alustudent.com` or `@alueducation.com`. An unverified or non-ALU account
+  can't read or write anything, even outside the app.
 
 ---
 
@@ -116,13 +128,16 @@ flowchart TD
 ### Navigation and roles
 
 `AuthCubit` listens to Firebase Auth and then to the user's `users/{uid}`
-document, so it always knows the signed-in user's **role**. `go_router` re-runs
-its redirect whenever `AuthCubit` emits:
+document, so it always knows the signed-in user's **role**. A signed-in
+account whose email isn't verified yet is in the **unverified** state and
+doesn't load a profile. `go_router` re-runs its redirect whenever `AuthCubit`
+emits:
 
 | Session | Allowed | Otherwise redirected to |
 | --- | --- | --- |
 | Loading | splash, auth screens | `/splash` |
 | Signed out | `/login`, `/signup`, `/forgot-password` | `/login` |
+| Signed in, email not verified | `/verify-email` | `/verify-email` |
 | Student | `/home`, `/reports`, `/profile`, `/report`, `/incident/:id` | `/home` |
 | Staff | `/staff`, `/staff/profile`, `/incident/:id` | `/staff` |
 
@@ -142,10 +157,10 @@ lib/
 │   ├── theme/                 # AppColors, AppTextStyles, AppTheme
 │   └── utils/                 # Validators, DateFormatter
 ├── data/
-│   ├── models/                # AppUser, Incident, StatusChange
+│   ├── models/                # AppUser, AuthSession, Incident, StatusChange
 │   └── repositories/          # AuthRepository, IncidentRepository, AppException
 ├── logic/cubits/              # auth, auth_form, report_form, incident_list,
-│                              # incident_details, status_update
+│                              # incident_details, status_update, verify_email
 └── presentation/
     ├── screens/               # auth, student, staff, report, incident, profile
     └── widgets/               # Reusable UI components
@@ -166,6 +181,7 @@ users/{uid}
   role:        "student" | "staff"
   department:  string
   createdAt:   timestamp
+  (written once the email is verified: the rules refuse earlier writes)
 
 incidents/{incidentId}
   title:         string          (max 60 chars)
@@ -315,7 +331,9 @@ firebase emulators:start --only storage --project campus-incident-app-aedd3 --im
   change the Storage port, update `StorageConfig.emulatorPort` too.
 
 ### 5. Create a staff account
-1. Run the app and **sign up** normally. Every new account is a student.
+1. Run the app and **sign up** normally with an `@alueducation.com` (or
+   `@alustudent.com`) address, then open the link in the verification email
+   and tap **I've verified**. Every new account is a student.
 2. In the Firebase console go to **Firestore → users → {that user's uid}**.
 3. Change the `role` field from `"student"` to `"staff"`.
 4. The app switches to the staff dashboard right away, because the profile is
@@ -352,11 +370,12 @@ flutter test
 | Suite | What it covers |
 | --- | --- |
 | `test/unit/models_test.dart` | `AppUser`, `Incident`, `StatusChange` `fromMap`/`toMap` round-trips and defaults |
-| `test/unit/validators_test.dart` | Required, email, password, confirm, title, description, location, category |
+| `test/unit/validators_test.dart` | Required, email, ALU email domains, password, confirm, title, description, location, category |
 | `test/unit/status_category_test.dart` | Status/category values, labels, colors, icons, `next` |
-| `test/unit/router_redirect_test.dart` | Role-based redirects (students blocked from staff routes) |
+| `test/unit/router_redirect_test.dart` | Role-based redirects (students blocked from staff routes), unverified users kept on `/verify-email` |
 | `test/unit/app_exception_test.dart` | Firebase error → friendly message mapping |
-| `test/cubits/auth_cubit_test.dart` | Session/profile loading, roles, sign-out, login/sign-up form cubit |
+| `test/cubits/auth_cubit_test.dart` | Session/profile loading, roles, unverified and non-ALU sessions, verification check, sign-out, login/sign-up form cubit |
+| `test/cubits/verify_email_cubit_test.dart` | Resend with cooldown, "I've verified" check, error messages |
 | `test/cubits/report_form_cubit_test.dart` | Submit success, failure and validation |
 | `test/cubits/my_incidents_cubit_test.dart` | Loading, search, status/category filters, errors |
 | `test/cubits/status_update_cubit_test.dart` | Staff updates, students blocked, resolved reports |

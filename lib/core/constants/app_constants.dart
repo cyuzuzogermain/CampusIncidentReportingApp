@@ -12,6 +12,16 @@ abstract final class AppConstants {
   static const int descriptionMinLength = 10;
   static const int passwordMinLength = 6;
 
+  /// Only ALU accounts may sign up or sign in. Must match `firestore.rules`
+  /// and `storage.rules`.
+  static const List<String> allowedEmailDomains = [
+    'alustudent.com',
+    'alueducation.com',
+  ];
+
+  /// How long to wait before another verification email can be sent.
+  static const Duration verificationResendCooldown = Duration(seconds: 60);
+
   /// Longest staff comment on a status change. Must match `firestore.rules`.
   static const int statusCommentMaxLength = 500;
 

@@ -12,15 +12,25 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    match /incident_photos/{fileName} {
-      // Any signed-in user can view photos.
-      allow read: if request.auth != null;
+    // A signed-in ALU account (@alustudent.com or @alueducation.com, matching
+    // AppConstants.allowedEmailDomains) whose email has been verified.
+    function isVerifiedAluUser() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email is string
+        && request.auth.token.email.lower()
+             .matches('.*@(alustudent|alueducation)[.]com');
+    }
 
-      // Signed-in users can upload a new photo if it is an image under 5 MB.
+    match /incident_photos/{fileName} {
+      // Any verified ALU user can view photos.
+      allow read: if isVerifiedAluUser();
+
+      // Verified ALU users can upload a new photo if it is an image under 5 MB.
       // This keeps out other file types and very large uploads. The limit
       // matches AppConstants.maxPhotoBytes in the app. The uploader records
       // themselves in the ownerUid metadata.
-      allow create: if request.auth != null
+      allow create: if isVerifiedAluUser()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*')
         && request.resource.metadata.ownerUid == request.auth.uid;
@@ -29,7 +39,7 @@ service firebase.storage {
       // editing or withdraw their report. (Firestore rules decide whether
       // that edit or withdrawal is allowed.) Nobody overwrites a photo: an
       // edited report gets a photo with a new file name.
-      allow delete: if request.auth != null
+      allow delete: if isVerifiedAluUser()
         && resource.metadata.ownerUid == request.auth.uid;
       allow update: if false;
     }

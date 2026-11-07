@@ -23,6 +23,52 @@ void main() {
       expect(resolveRedirect(auth, AppRoutes.forgotPassword), isNull);
     });
 
+    test('unverified users can only reach the verify-email screen', () {
+      const auth = AuthState.unverified('jane@alustudent.com');
+      expect(resolveRedirect(auth, AppRoutes.verifyEmail), isNull);
+      for (final location in [
+        AppRoutes.splash,
+        AppRoutes.login,
+        AppRoutes.signUp,
+        AppRoutes.home,
+        AppRoutes.campusReports,
+        AppRoutes.reportIncident,
+        AppRoutes.staffDashboard,
+        AppRoutes.incidentDetails('x'),
+        AppRoutes.editIncident('x'),
+      ]) {
+        expect(
+          resolveRedirect(auth, location),
+          AppRoutes.verifyEmail,
+          reason: location,
+        );
+      }
+    });
+
+    test('verify-email is closed to signed-out and verified users', () {
+      expect(
+        resolveRedirect(
+          const AuthState.unauthenticated(),
+          AppRoutes.verifyEmail,
+        ),
+        AppRoutes.login,
+      );
+      expect(
+        resolveRedirect(
+          AuthState.authenticated(testStudent),
+          AppRoutes.verifyEmail,
+        ),
+        AppRoutes.home,
+      );
+      expect(
+        resolveRedirect(
+          AuthState.authenticated(testStaff),
+          AppRoutes.verifyEmail,
+        ),
+        AppRoutes.staffDashboard,
+      );
+    });
+
     test('students go to the student shell and never reach staff routes', () {
       final auth = AuthState.authenticated(testStudent);
       expect(resolveRedirect(auth, AppRoutes.login), AppRoutes.home);

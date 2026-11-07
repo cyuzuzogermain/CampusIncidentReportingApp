@@ -9,6 +9,7 @@ import 'app_routes.dart';
 String? resolveRedirect(AuthState auth, String location) {
   final onAuthRoute = AppRoutes.authRoutes.contains(location);
   final onSplash = location == AppRoutes.splash;
+  final onVerifyEmail = location == AppRoutes.verifyEmail;
 
   switch (auth.status) {
     case AuthStatus.unknown:
@@ -19,9 +20,14 @@ String? resolveRedirect(AuthState auth, String location) {
     case AuthStatus.unauthenticated:
       return onAuthRoute ? null : AppRoutes.login;
 
+    case AuthStatus.unverified:
+      // Signed in, but the ALU email isn't verified: nothing else is
+      // reachable (the Firestore rules would refuse every read anyway).
+      return onVerifyEmail ? null : AppRoutes.verifyEmail;
+
     case AuthStatus.authenticated:
       final home = auth.isStaff ? AppRoutes.staffDashboard : AppRoutes.home;
-      if (onAuthRoute || onSplash) return home;
+      if (onAuthRoute || onSplash || onVerifyEmail) return home;
 
       // Students must never reach staff routes, and staff use their own shell.
       if (!auth.isStaff && AppRoutes.isStaffRoute(location)) return home;

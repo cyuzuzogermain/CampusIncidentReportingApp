@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:campus_incident_app/data/models/app_user.dart';
+import 'package:campus_incident_app/data/models/auth_session.dart';
 import 'package:campus_incident_app/data/repositories/app_exception.dart';
 import 'package:campus_incident_app/logic/cubits/auth/auth_cubit.dart';
 import 'package:campus_incident_app/logic/cubits/auth_form/auth_form_cubit.dart';
@@ -10,14 +11,17 @@ import 'package:mocktail/mocktail.dart';
 
 import '../helpers/test_helpers.dart';
 
+AuthSession sessionFor(AppUser user, {bool verified = true}) =>
+    AuthSession(uid: user.uid, email: user.email, emailVerified: verified);
+
 void main() {
   late MockAuthRepository repository;
-  late StreamController<String?> authController;
+  late StreamController<AuthSession?> authController;
   late StreamController<AppUser?> profileController;
 
   setUp(() {
     repository = MockAuthRepository();
-    authController = StreamController<String?>();
+    authController = StreamController<AuthSession?>();
     profileController = StreamController<AppUser?>();
     when(
       () => repository.authStateChanges(),
@@ -25,6 +29,7 @@ void main() {
     when(
       () => repository.watchUserProfile(any()),
     ).thenAnswer((_) => profileController.stream);
+    when(() => repository.ensureProfile()).thenAnswer((_) async {});
     when(() => repository.signOut()).thenAnswer((_) async {});
   });
 
@@ -49,12 +54,13 @@ void main() {
       'loads the profile (with role) after sign-in',
       build: () => AuthCubit(repository),
       act: (_) async {
-        authController.add(testStudent.uid);
+        authController.add(sessionFor(testStudent));
         await Future<void>.delayed(Duration.zero);
         profileController.add(testStudent);
       },
       expect: () => [AuthState.authenticated(testStudent)],
       verify: (cubit) {
+        verify(() => repository.ensureProfile()).called(1);
         verify(() => repository.watchUserProfile(testStudent.uid)).called(1);
         expect(cubit.state.isStaff, isFalse);
       },
@@ -64,7 +70,7 @@ void main() {
       'recognises a staff profile',
       build: () => AuthCubit(repository),
       act: (_) async {
-        authController.add(testStaff.uid);
+        authController.add(sessionFor(testStaff));
         await Future<void>.delayed(Duration.zero);
         profileController.add(testStaff);
       },
@@ -73,10 +79,10 @@ void main() {
     );
 
     blocTest<AuthCubit, AuthState>(
-      'waits while the profile document is still being created at sign-up',
+      'waits while the profile document is still being written',
       build: () => AuthCubit(repository),
       act: (_) async {
-        authController.add(testStudent.uid);
+        authController.add(sessionFor(testStudent));
         await Future<void>.delayed(Duration.zero);
         profileController.add(null);
         await Future<void>.delayed(Duration.zero);
@@ -86,13 +92,98 @@ void main() {
     );
 
     blocTest<AuthCubit, AuthState>(
+      'emits unverified, without touching Firestore, until the email is '
+      'verified',
+      build: () => AuthCubit(repository),
+      act: (_) => authController.add(sessionFor(testStudent, verified: false)),
+      expect: () => [AuthState.unverified(testStudent.email)],
+      verify: (cubit) {
+        expect(cubit.state.email, testStudent.email);
+        verifyNever(() => repository.ensureProfile());
+        verifyNever(() => repository.watchUserProfile(any()));
+      },
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'signs out a session whose email is not on an ALU domain',
+      build: () => AuthCubit(repository),
+      act: (_) => authController.add(
+        const AuthSession(
+          uid: 'outsider',
+          email: 'someone@gmail.com',
+          emailVerified: true,
+        ),
+      ),
+      expect: () => [
+        const AuthState.unauthenticated(
+          errorMessage: 'Please use your ALU email address',
+        ),
+      ],
+      verify: (_) {
+        verify(() => repository.signOut()).called(1);
+        verifyNever(() => repository.ensureProfile());
+      },
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'checkEmailVerified loads the profile once the email is verified',
+      setUp: () => when(
+        () => repository.reloadSession(),
+      ).thenAnswer((_) async => sessionFor(testStudent)),
+      build: () => AuthCubit(repository),
+      act: (cubit) async {
+        authController.add(sessionFor(testStudent, verified: false));
+        await Future<void>.delayed(Duration.zero);
+        expect(await cubit.checkEmailVerified(), isTrue);
+        await Future<void>.delayed(Duration.zero);
+        profileController.add(testStudent);
+      },
+      expect: () => [
+        AuthState.unverified(testStudent.email),
+        const AuthState.unknown(),
+        AuthState.authenticated(testStudent),
+      ],
+      verify: (_) => verify(() => repository.ensureProfile()).called(1),
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'checkEmailVerified stays unverified when the email still is not',
+      setUp: () => when(
+        () => repository.reloadSession(),
+      ).thenAnswer((_) async => sessionFor(testStudent, verified: false)),
+      build: () => AuthCubit(repository),
+      act: (cubit) async {
+        authController.add(sessionFor(testStudent, verified: false));
+        await Future<void>.delayed(Duration.zero);
+        expect(await cubit.checkEmailVerified(), isFalse);
+      },
+      expect: () => [AuthState.unverified(testStudent.email)],
+      verify: (_) => verifyNever(() => repository.ensureProfile()),
+    );
+
+    blocTest<AuthCubit, AuthState>(
+      'signs out with the error when the profile cannot be created',
+      setUp: () => when(
+        () => repository.ensureProfile(),
+      ).thenThrow(const AppException('You do not have permission to do that.')),
+      build: () => AuthCubit(repository),
+      act: (_) => authController.add(sessionFor(testStudent)),
+      expect: () => [
+        const AuthState.unauthenticated(
+          errorMessage: 'You do not have permission to do that.',
+        ),
+      ],
+      verify: (_) => verify(() => repository.signOut()).called(1),
+    );
+
+    blocTest<AuthCubit, AuthState>(
       'signs out with an error when the profile never appears',
       build: () => AuthCubit(
         repository,
         profileTimeout: const Duration(milliseconds: 20),
       ),
       act: (_) async {
-        authController.add(testStudent.uid);
+        authController.add(sessionFor(testStudent));
         await Future<void>.delayed(const Duration(milliseconds: 50));
       },
       expect: () => [
@@ -126,7 +217,8 @@ void main() {
         ),
       ).thenAnswer((_) async {}),
       build: () => AuthFormCubit(repository),
-      act: (cubit) => cubit.signIn(email: 'jane@uni.edu', password: 'secret1'),
+      act: (cubit) =>
+          cubit.signIn(email: 'jane@alustudent.com', password: 'secret1'),
       expect: () => const [
         AuthFormState(status: AuthFormStatus.submitting),
         AuthFormState(status: AuthFormStatus.success),
@@ -142,7 +234,8 @@ void main() {
         ),
       ).thenThrow(const AppException('Incorrect email or password.')),
       build: () => AuthFormCubit(repository),
-      act: (cubit) => cubit.signIn(email: 'jane@uni.edu', password: 'wrong1'),
+      act: (cubit) =>
+          cubit.signIn(email: 'jane@alustudent.com', password: 'wrong1'),
       expect: () => const [
         AuthFormState(status: AuthFormStatus.submitting),
         AuthFormState(
@@ -165,7 +258,7 @@ void main() {
       build: () => AuthFormCubit(repository),
       act: (cubit) => cubit.signUp(
         name: 'Jane',
-        email: 'jane@uni.edu',
+        email: 'jane@alustudent.com',
         department: 'CS',
         password: 'secret1',
       ),
@@ -176,7 +269,7 @@ void main() {
       verify: (_) => verify(
         () => repository.signUp(
           name: 'Jane',
-          email: 'jane@uni.edu',
+          email: 'jane@alustudent.com',
           department: 'CS',
           password: 'secret1',
         ),
